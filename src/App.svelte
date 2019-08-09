@@ -1,5 +1,6 @@
 <script>
   import Balance from "./Balance.svelte";
+  let amount = "";
   let ask, bid, last;
   var ws = new WebSocket('wss://api-pub.bitfinex.com/ws/2');
   let chanId;
@@ -24,6 +25,26 @@
       ws.send(msg);
     }
   };
+
+let proposal = Promise.resolve("");
+async function getProposal() {
+    const v1 = amount / ask;
+    const v2 = amount;
+    const res = await fetch(`/api/proposal?v1=${v1}&v2=${v2}`);
+		const json = await res.json();
+    console.log(json);
+
+		if (res.ok) {
+			return json;
+		} else {
+			throw new Error(json);
+		}
+	}
+
+const submit = async () => {
+  proposal = getProposal();
+  console.log(proposal);
+} 
 </script>
 
 <style>
@@ -37,3 +58,18 @@
 <p>Ask: {ask}</p>
 <p>Last: {last}</p>
 <Balance />
+<label>Amount L-USDt to purchase</label>
+<input bind:value={amount} />
+<button on:click={submit}>
+	submit
+</button>
+
+{#await proposal}
+{:then p}
+  {#if p.proposal}
+  <p>{p.proposal}</p>
+  <p>{JSON.stringify(p.info)}</p>
+  {/if}
+{:catch error}
+	<p style="color: red">{error.message}</p>
+{/await}
