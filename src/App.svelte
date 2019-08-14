@@ -1,5 +1,7 @@
 <script>
   import Balance from "./Balance.svelte";
+  import Accept from "./Accept.svelte";
+
   let amount = "";
   let ask, bid, last;
   var ws = new WebSocket('wss://api-pub.bitfinex.com/ws/2');
@@ -73,3 +75,5 @@ const submit = async () => {
 {:catch error}
 	<p style="color: red">{error.message}</p>
 {/await}
+
+<Accept />
