@@ -1,3 +1,4 @@
 .DS_Store
 public/bundle.*
+public/components*
 node_modules
