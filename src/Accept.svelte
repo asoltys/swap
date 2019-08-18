@@ -24,7 +24,7 @@
   } 
 </script>
 
-<textarea class="border p-2 h-64" bind:value={acceptance}></textarea>
+<textarea placeholder="Paste the encoded acceptance transaction in all its glory here" class="border p-2 h-64" bind:value={acceptance}></textarea>
 <button class="block bg-blue-600 p-4 text-white mx-auto" on:click={submit}>Submit</button>
 
 {#await info}

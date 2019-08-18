@@ -1,6 +1,7 @@
 <script>
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
+  import Spinner from "./Spinner.svelte";
   import Accept from "./Accept.svelte";
   import Balance from "./Balance.svelte";
   import assets from "./assets";
@@ -9,14 +10,18 @@
   const dismiss = () => showInstructions = false;
   let submitted = false;
 
-  let input = assets["tether"];
-  let output = assets["bitcoin"];
+  let input = assets["bitcoin"];
+  let output = assets["tether"];
 
   const swap = () => {
     let temp = input;
     input = output;
     output = temp;
   } 
+
+const focus = e => {
+  e.focus(); e.select();
+}
 
   let copied = false;
   const copy = str => {
@@ -40,30 +45,46 @@
     copied = true;
   };
 
-  let ask = tweened(0, {
+  let askTwn = tweened(0, {
     duration: 400,
     easing: cubicOut
   });
 
-  let bid = tweened(0, {
+  let bidTwn = tweened(0, {
     duration: 400,
     easing: cubicOut
   });
 
-  let last = tweened(0, {
-    duration: 400,
-    easing: cubicOut
-  });
+  const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
 
-  var ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
-  let chanId;
-
+  let initialized;
+  let bid, ask;
   ws.onmessage = function (event) {
     let msg = JSON.parse(event.data);
-    ask.set(parseFloat(msg.a));
-    bid.set(parseFloat(msg.b));
-    last.set(parseFloat(msg.l));
+    bid = parseFloat(msg.b);
+    ask = parseFloat(msg.a);
+    askTwn.set(ask);
+    bidTwn.set(bid);
+
+    if (!initialized) {
+      input.value = "0.0001"
+      output.value = (input.value * msg.a).toFixed(2)
+      initialized = true;
+    }
   };
+
+  async function calc(e) {
+    setTimeout(() => {
+      let { value: v } = e.target;
+      v = parseFloat(v);
+      if (input.name === "Bitcoin") {
+        output.value = (v * ask).toFixed(2);
+      }
+      else {
+        output.value = (v / bid).toFixed(8);
+      }
+    });
+  }
 
   let proposal = Promise.resolve("");
   async function getProposal() {
@@ -114,6 +135,12 @@
 </script>
 
 <style>
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
   p { @apply mb-4; } 
   p.mb-0 { @apply mb-0; }
 </style>
@@ -133,8 +160,8 @@
 
   <Balance />
 
-	<p class="mb-0">Bid rate: {$bid.toFixed(2)}</p>
-	<p>Ask rate: {$ask.toFixed(2)}</p>
+	<p class="mb-0">Bid rate: {$bidTwn.toFixed(2)}</p>
+	<p>Ask rate: {$askTwn.toFixed(2)}</p>
 
   <div class="w-100 text-right">
     <button class="bg-blue-600 p-4 text-white" on:click={dismiss}>Got it</button>
@@ -149,7 +176,7 @@
   {/if}
   {#if state == "proposing"}
     {#await proposal}
-      Generating Proposal
+      <Spinner />
     {:then p}
       {#if p.proposal}
         <h1 class="text-3xl">The Proposal</h1>
@@ -162,7 +189,7 @@
             We send: {output.value} {output.name}
           </div>
           <div>
-            We pay this fee: {p.info.legs[0].fee} Bitcoin
+            We send this fee: {p.info.legs[0].fee} Bitcoin
           </div>
         </div>
 
@@ -189,20 +216,27 @@
     {/await}
   {/if}
   {#if state == "home"}
-    <h2 class="text-3xl">Swap</h2>
-    <div class="flex">
-      <input type="number" step="any" class="w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={input.value} />
-      <img src={`/${input.logo}`} alt={`/${input.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
-    </div>
-    <div class="relative">
-      <img src="/swap.svg" alt="Switch" class="w-12 absolute right-0 cursor-pointer" on:click={swap} />
-      <h2 class="text-3xl">for</h2>
-    </div>
-    <div class="clearfix flex mb-4">
-      <input type="number" step="any" class="w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={output.value} />
-      <img  src={`/${output.logo}`} alt={`/${output.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
-    </div>
+    {#if initialized}
+      <p class="mb-0">Binance Ask: {$askTwn.toFixed(2)}</p>
+      <h2 class="text-3xl">Swap</h2>
+      <form on:submit|preventDefault={submit}>
+        <div class="flex">
+          <input type="text" class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={input.value} use:focus on:keydown={calc} />
+          <img src={`/${input.logo}`} alt={`/${input.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
+        </div>
+        <div class="relative">
+          <img src="/swap.svg" alt="Switch" class="w-12 absolute right-0 cursor-pointer" on:click={swap} />
+          <h2 class="text-3xl">for</h2>
+        </div>
+        <div class="clearfix flex mb-4">
+          <input type="number" class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={output.value} />
+          <img  src={`/${output.logo}`} alt={`/${output.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
+        </div>
 
-    <button class="bg-blue-600 p-2 text-3xl text-white w-24" on:click={submit}>Go</button>
+        <button class="bg-blue-600 p-2 text-3xl text-white w-24" on:click={submit}>Go</button>
+      </form>
+    {:else}
+      <Spinner />
+    {/if}
   {/if}
 </div>
