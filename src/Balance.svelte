@@ -16,8 +16,8 @@
 {#await promise}
 	<p>...waiting</p>
 {:then balance}
-	<p>L-BTC available: {balance.bitcoin}</p>
-	<p>L-USDt available: {balance.tether}</p>
+	<p>L-BTC available: {balance.bitcoin.toFixed(8)}</p>
+	<p>L-USDt available: {balance.tether.toFixed(8)}</p>
 {:catch error}
 	<p style="color: red">{error.message}</p>
 {/await}

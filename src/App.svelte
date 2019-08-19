@@ -1,10 +1,11 @@
 <script>
-  import { tweened } from 'svelte/motion';
-  import { cubicOut } from 'svelte/easing';
   import Spinner from "./Spinner.svelte";
   import Accept from "./Accept.svelte";
   import Balance from "./Balance.svelte";
   import assets from "./assets";
+  import { askTwn, bidTwn } from "./tweens";
+  import focus from "./focus";
+
 	export let name;
   let showInstructions = false;
   const dismiss = () => showInstructions = false;
@@ -18,10 +19,6 @@
     input = output;
     output = temp;
   } 
-
-const focus = e => {
-  e.focus(); e.select();
-}
 
   let copied = false;
   const copy = str => {
@@ -45,16 +42,6 @@ const focus = e => {
     copied = true;
   };
 
-  let askTwn = tweened(0, {
-    duration: 400,
-    easing: cubicOut
-  });
-
-  let bidTwn = tweened(0, {
-    duration: 400,
-    easing: cubicOut
-  });
-
   const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
 
   let initialized;
@@ -67,8 +54,8 @@ const focus = e => {
     bidTwn.set(bid);
 
     if (!initialized) {
-      input.value = "0.0001"
-      output.value = (input.value * msg.a).toFixed(2)
+      input.value = "0.00010000"
+      output.value = (input.value * msg.a).toFixed(8)
       initialized = true;
     }
   };
@@ -78,7 +65,7 @@ const focus = e => {
       let { value: v } = e.target;
       v = parseFloat(v);
       if (input.name === "Bitcoin") {
-        output.value = (v * ask).toFixed(2);
+        output.value = (v * ask).toFixed(8);
       }
       else {
         output.value = (v / bid).toFixed(8);
@@ -160,9 +147,6 @@ input[type=number]::-webkit-outer-spin-button {
 
   <Balance />
 
-	<p class="mb-0">Bid rate: {$bidTwn.toFixed(2)}</p>
-	<p>Ask rate: {$askTwn.toFixed(2)}</p>
-
   <div class="w-100 text-right">
     <button class="bg-blue-600 p-4 text-white" on:click={dismiss}>Got it</button>
   </div>
@@ -183,13 +167,13 @@ input[type=number]::-webkit-outer-spin-button {
 
         <div class="shadow p-2 rounded text-left my-4">
           <div>
-            You send: {input.value} {input.name}
+            You send: {parseFloat(input.value).toFixed(8)} {input.name}
           </div>
           <div>
-            We send: {output.value} {output.name}
+            We send: {parseFloat(output.value).toFixed(8)} {output.name}
           </div>
           <div>
-            We send this fee: {p.info.legs[0].fee} Bitcoin
+            We add a fee: {p.info.legs[0].fee} Bitcoin
           </div>
         </div>
 

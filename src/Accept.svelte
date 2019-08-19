@@ -1,4 +1,8 @@
 <script>
+  import Spinner from "./Spinner.svelte";
+  import Waiting from "./Waiting.svelte";
+  import focus from "./focus";
+
   let acceptance = "";
   let info = Promise.resolve("");
 
@@ -21,17 +25,22 @@
 
   const submit = () => {
     info = sendAcceptance()   
+    state = "accepted";
   } 
+
+  let state = "input";
 </script>
 
-<textarea placeholder="Paste the encoded acceptance transaction in all its glory here" class="border p-2 h-64" bind:value={acceptance}></textarea>
-<button class="block bg-blue-600 p-4 text-white mx-auto" on:click={submit}>Submit</button>
+{#if state === "input"}
+  <textarea use:focus placeholder="Paste the encoded acceptance transaction in all its glory here" class="border p-2 h-64" bind:value={acceptance}></textarea>
+  <button class="block bg-blue-600 p-4 text-white mx-auto" on:click={submit}>Submit</button>
+{/if}
 
 {#await info}
-  Parsing Transaction
-{:then json}
-  {#if json.length > 0}
-    <pre>{JSON.stringify(json)}</pre>
+  <Spinner />
+{:then rate}
+  {#if rate.length > 0}
+    <Waiting rate={rate} />
   {/if}
 {:catch error}
 	<p style="color: red">{error.message}</p>
