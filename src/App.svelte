@@ -1,4 +1,5 @@
 <script>
+  import { tick } from 'svelte';
   import Spinner from "./Spinner.svelte";
   import Accept from "./Accept.svelte";
   import Balance from "./Balance.svelte";
@@ -7,6 +8,8 @@
   import focus from "./focus";
 
 	export let name;
+  const fee = 0.00002855;
+
   let showInstructions = false;
   const dismiss = () => showInstructions = false;
   let submitted = false;
@@ -14,10 +17,31 @@
   let input = assets["bitcoin"];
   let output = assets["tether"];
 
+  let inputField, outputField;
+
+  // Restricts input for the given textbox to the given inputFilter.
+  function setInputFilter(textbox, inputFilter) {
+    ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach(function(event) {
+      textbox.addEventListener(event, function() {
+        if (inputFilter(this.value)) {
+          this.oldValue = this.value;
+          this.oldSelectionStart = this.selectionStart;
+          this.oldSelectionEnd = this.selectionEnd;
+        } else if (this.hasOwnProperty("oldValue")) {
+          this.value = this.oldValue;
+          this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+        }
+      });
+    });
+  }
+
+  // Restrict input to digits and '.' by using a regular expression filter.
+
   const swap = () => {
     let temp = input;
     input = output;
     output = temp;
+    calc({ target: { value: input.value }});
   } 
 
   let copied = false;
@@ -46,7 +70,7 @@
 
   let initialized;
   let bid, ask;
-  ws.onmessage = function (event) {
+  ws.onmessage = async function (event) {
     let msg = JSON.parse(event.data);
     bid = parseFloat(msg.b);
     ask = parseFloat(msg.a);
@@ -54,28 +78,42 @@
     bidTwn.set(bid);
 
     if (!initialized) {
-      input.value = "0.00010000"
-      output.value = (input.value * msg.a).toFixed(8)
+      input.value = "0.00100000"
+      output.value = ((input.value - fee) * msg.a).toFixed(8)
       initialized = true;
+      await tick();
+
+      [inputField, outputField].map(f =>
+        setInputFilter(f, function(value) {
+          return /^\d*\.?\d*$/.test(value);
+        })
+      );
     }
   };
 
   async function calc(e) {
+    let { value: v } = e.target;
+    console.log(e.target.value);
+
     setTimeout(() => {
-      let { value: v } = e.target;
       v = parseFloat(v);
+      console.log(e.target.value);
+
       if (input.name === "Bitcoin") {
-        output.value = (v * ask).toFixed(8);
+        v = ((v - fee) * bid).toFixed(8)
       }
       else {
-        output.value = (v / bid).toFixed(8);
+        v = ((v / ask) + fee).toFixed(8);
+        console.log(v, ask, fee);
       }
+
+      if (v && !isNaN(v)) output.value = v;
     });
   }
 
   let proposal = Promise.resolve("");
   async function getProposal() {
-    const res = await fetch(`/api/proposal?v1=${input.value}&v2=${output.value}&a1=${input.id}&a2=${output.id}`);
+    const res = await fetch(`/api/proposal?v1=${output.value}&v2=${input.value}&a1=${output.id}&a2=${input.id}`);
     const json = await res.json();
 
     if (res.ok) {
@@ -122,12 +160,6 @@
 </script>
 
 <style>
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-
   p { @apply mb-4; } 
   p.mb-0 { @apply mb-0; }
 </style>
@@ -153,9 +185,13 @@ input[type=number]::-webkit-outer-spin-button {
 </div>
 {/if}
 
-
 <div class="text-xl max-w-md flex-grow mx-auto p-6 text-center">
   {#if state == "accepting"}
+    {#if input.name === "Bitcoin"}
+      <p class="mb-2">Binance Bid: {$bidTwn.toFixed(2)}</p>
+    {:else}
+      <p class="mb-2">Binance Ask: {$askTwn.toFixed(2)}</p>
+    {/if}
     <Accept />
   {/if}
   {#if state == "proposing"}
@@ -175,6 +211,14 @@ input[type=number]::-webkit-outer-spin-button {
           <div>
             We add a fee: {p.info.legs[0].fee} Bitcoin
           </div>
+        </div>
+
+        <div class="text-left mb-2">
+          {#if p.asset === "tether"}
+            We'll broadcast when the bid price is above {parseFloat(p.rate).toFixed(2)}
+          {:else}
+            We'll broadcast when the ask price is below {parseFloat(p.rate).toFixed(2)}
+          {/if}
         </div>
 
         <div>
@@ -199,13 +243,19 @@ input[type=number]::-webkit-outer-spin-button {
       <p style="color: red">{error.message}</p>
     {/await}
   {/if}
+
   {#if state == "home"}
     {#if initialized}
-      <p class="mb-0">Binance Ask: {$askTwn.toFixed(2)}</p>
+      {#if input.name === "Bitcoin"}
+        <p class="mb-2">Binance Bid: {$bidTwn.toFixed(2)}</p>
+      {:else}
+        <p class="mb-2">Binance Ask: {$askTwn.toFixed(2)}</p>
+      {/if}
+
       <h2 class="text-3xl">Swap</h2>
       <form on:submit|preventDefault={submit}>
         <div class="flex">
-          <input type="text" class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={input.value} use:focus on:keydown={calc} />
+          <input type="text" bind:this={inputField} class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={input.value} use:focus on:keydown={calc} />
           <img src={`/${input.logo}`} alt={`/${input.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
         </div>
         <div class="relative">
@@ -213,7 +263,7 @@ input[type=number]::-webkit-outer-spin-button {
           <h2 class="text-3xl">for</h2>
         </div>
         <div class="clearfix flex mb-4">
-          <input type="number" class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={output.value} />
+          <input type="text" bind:this={outputField} class="appearance-none w-4 border p-2 flex-grow mr-2 text-right text-2xl" bind:value={output.value} />
           <img  src={`/${output.logo}`} alt={`/${output.name}`} class="w-12 m-auto cursor-pointer" on:click={swap} />
         </div>
 
