@@ -6,6 +6,7 @@
   import assets from "./assets";
   import { askTwn, bidTwn } from "./tweens";
   import focus from "./focus";
+  import Transactions from "./Transactions.svelte";
 
   export let name;
   const fee = 0.00002855;
@@ -77,11 +78,13 @@
     copied = true;
   };
 
-  const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+  const binance = new WebSocket(
+    "wss://stream.binance.com:9443/ws/btcusdt@ticker"
+  );
 
   let initialized;
   let bid, ask;
-  ws.onmessage = async function(event) {
+  binance.onmessage = async function(event) {
     let msg = JSON.parse(event.data);
     bid = parseFloat(msg.b);
     ask = parseFloat(msg.a);
@@ -351,4 +354,7 @@
       <Spinner />
     {/if}
   {/if}
+
+  <div />
+  <Transactions />
 </div>
