@@ -5,35 +5,21 @@
   let tether = [];
   let completed = [];
 
-  const api = new WebSocket("ws://swap/ws");
+  const api = new WebSocket("ws://" + window.location.hostname + "/ws");
 
   api.onmessage = async function(event) {
-    console.log(event.data);
     ({ bitcoin, tether, completed } = JSON.parse(event.data));
   };
 </script>
 
-<div class
-<div class="flex">
-  <div class="w-1/2">
-    <h2>Bitcoin</h2>
-    {#each bitcoin as tx (tx.key)}
-      <div>{timeago.format(tx.key)}</div>
-    {/each}
-  </div>
-
-  <div class="w-1/2">
-    <h2>Tether</h2>
-    {#each tether as tx (tx.key)}
-      <div>{timeago.format(tx.key)}</div>
-    {/each}
-  </div>
-</div>
-
-<h2>Completed</h2>
+<h2 class="text-left mt-4 text-2xl">Completed Transactions</h2>
 {#each completed as tx (tx.key)}
-  <div>
-    {timeago.format(tx.key)}
-    <a href="https://blockstream.info/liquid/tx/{tx.id}">{tx.id}</a>
+  <div class="flex max-w-md">
+    <div>{timeago.format(tx.key)}</div>
+    <div class="text-right flex-grow">
+      <a href="https://blockstream.info/liquid/tx/{tx.id}" title={tx.id}>
+        {tx.id.substr(0, 6)}{tx.id.substr(-6)}
+      </a>
+    </div>
   </div>
 {/each}

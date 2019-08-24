@@ -6,13 +6,17 @@
   import assets from "./assets";
   import { askTwn, bidTwn } from "./tweens";
   import focus from "./focus";
+  import Instructions from "./Instructions.svelte";
   import Transactions from "./Transactions.svelte";
 
   export let name;
   const fee = 0.00002855;
 
   let showInstructions = false;
-  const dismiss = () => (showInstructions = false);
+  const toggleInstructions = () => {
+    console.log("omg", showInstructions);
+    showInstructions = !showInstructions;
+  };
   let submitted = false;
 
   let input = assets["bitcoin"];
@@ -107,17 +111,14 @@
 
   async function calc(e) {
     let { value: v } = e.target;
-    console.log(e.target.value);
 
     setTimeout(() => {
       v = parseFloat(v);
-      console.log(e.target.value);
 
       if (input.name === "Bitcoin") {
         v = ((v - fee) * bid).toFixed(8);
       } else {
         v = (v / ask + fee).toFixed(8);
-        console.log(v, ask, fee);
       }
 
       if (v && !isNaN(v)) output.value = v;
@@ -187,47 +188,13 @@
   <h1 class="text-3xl">
     <a href="/">Liquid Swap Server</a>
   </h1>
-  <div
-    class="text-3xl ml-auto cursor-pointer"
-    on:click={() => (showInstructions = !showInstructions)}>
+  <div class="text-3xl ml-auto cursor-pointer" on:click={toggleInstructions}>
     ?
   </div>
 </div>
 
 {#if showInstructions}
-  <div class="p-4 max-w-xl border-b mx-auto">
-    <p>
-      Use this page to request atomic swaps between Bitcoin (L-BTC) and Tether
-      (L-USDt) on the Liquid network. Submit the amount you want to swap and the
-      server will generate a proposal transaction. Use the
-      <a
-        class="text-blue-600"
-        href="https://github.com/Blockstream/liquid-swap">
-        liquid-swap tool
-      </a>
-      to accept the proposal, then submit the encoded acceptance message using
-      the form provided.
-    </p>
-
-    <p>
-      If the exchange rate is in our favour, we'll immediately finalize and
-      broadcast the transaction. Otherwise, the transaction will be queued until
-      the exchange rate comes back our way.
-    </p>
-
-    <p>
-      We use the bid and ask rates from Binance and don't charge any additional
-      commission.
-    </p>
-
-    <Balance />
-
-    <div class="w-100 text-right">
-      <button class="bg-blue-600 p-4 text-white" on:click={dismiss}>
-        Got it
-      </button>
-    </div>
-  </div>
+  <Instructions {toggleInstructions} />
 {/if}
 
 <div class="text-xl max-w-md flex-grow mx-auto p-6 text-center">
@@ -355,6 +322,5 @@
     {/if}
   {/if}
 
-  <div />
   <Transactions />
 </div>

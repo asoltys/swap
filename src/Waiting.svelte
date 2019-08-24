@@ -1,7 +1,6 @@
 <script>
   import { bidTwn, askTwn } from "./tweens";
   import assets from "./assets";
-  import Transactions from "./Transactions.svelte";
 
   export let rate;
   export let asset;
@@ -17,5 +16,3 @@
     We'll broadcast when the ask price is below {parseFloat(rate).toFixed(2)}
   </div>
 {/if}
-
-<Transactions />
