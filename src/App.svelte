@@ -10,13 +10,10 @@
   import Transactions from "./Transactions.svelte";
 
   export let name;
-  const fee = 0.00002855;
+  const fee = 0.00003;
 
   let showInstructions = false;
-  const toggleInstructions = () => {
-    console.log("omg", showInstructions);
-    showInstructions = !showInstructions;
-  };
+  const toggleInstructions = () => (showInstructions = !showInstructions);
   let submitted = false;
 
   let input = assets["bitcoin"];
@@ -91,7 +88,9 @@
   binance.onmessage = async function(event) {
     let msg = JSON.parse(event.data);
     bid = parseFloat(msg.b);
+    //bid = 10000;
     ask = parseFloat(msg.a);
+    //ask = 10000;
     askTwn.set(ask);
     bidTwn.set(bid);
 
@@ -110,18 +109,18 @@
   };
 
   async function calc(e) {
-    let { value: v } = e.target;
-
     setTimeout(() => {
+      let { value: v } = e.target;
+
       v = parseFloat(v);
 
       if (input.name === "Bitcoin") {
         v = ((v - fee) * bid).toFixed(8);
       } else {
-        v = (v / ask + fee).toFixed(8);
+        v = (v / ask - fee).toFixed(8);
       }
 
-      if (v && !isNaN(v)) output.value = v;
+      if (v && !isNaN(v)) output.value = Math.max(v, 0);
     });
   }
 
@@ -135,7 +134,7 @@
     if (res.ok) {
       return json;
     } else {
-      throw new Error(json);
+      throw new Error(json.error);
     }
   }
 
@@ -182,6 +181,14 @@
   p.mb-0 {
     @apply mb-0;
   }
+
+  button {
+    @apply bg-blue-600 p-4 text-white;
+  }
+
+  button:disabled {
+    @apply opacity-50;
+  }
 </style>
 
 <div class="flex bg-blue-600 text-white p-5">
@@ -211,6 +218,12 @@
       <Spinner />
     {:then p}
       {#if p.proposal}
+        {#if input.name === 'Bitcoin'}
+          <p class="mb-2">Binance Bid: {$bidTwn.toFixed(2)}</p>
+        {:else}
+          <p class="mb-2">Binance Ask: {$askTwn.toFixed(2)}</p>
+        {/if}
+
         <h1 class="text-3xl">The Proposal</h1>
 
         <div class="shadow p-2 rounded text-left my-4">
@@ -223,27 +236,19 @@
 
         <div class="text-left mb-2">
           {#if p.asset === 'tether'}
-            We'll broadcast when the bid price is above {parseFloat(p.rate).toFixed(2)}
+            We'll broadcast when the bid price is above {parseFloat(1 / p.rate).toFixed(2)}
           {:else}
             We'll broadcast when the ask price is below {parseFloat(p.rate).toFixed(2)}
           {/if}
         </div>
 
         <div>
-          <button class="bg-blue-600 p-4 text-white" on:click={toggle}>
-            {show ? 'Hide' : 'Show'}
-          </button>
-          <button
-            class="bg-blue-600 p-4 text-white"
-            on:click={() => copy(p.proposal)}>
-            Copy
-          </button>
-          <button class="bg-blue-600 p-4 text-white" on:click={download}>
-            Download
-          </button>
+          <button on:click={toggle}>{show ? 'Hide' : 'Show'}</button>
+          <button on:click={() => copy(p.proposal)}>Copy</button>
+          <button on:click={download}>Download</button>
         </div>
 
-        <button class="bg-blue-600 p-4 text-white my-4" on:click={accept}>
+        <button class="my-4" on:click={accept}>
           Submit Accepted Transaction
         </button>
 
@@ -260,7 +265,8 @@
         {/if}
       {/if}
     {:catch error}
-      <p style="color: red">{error.message}</p>
+      <p style="color: red">{error}</p>
+      <button class="my-4" on:click={() => (state = 'home')}>Back</button>
     {/await}
   {/if}
 
@@ -312,8 +318,9 @@
         </div>
 
         <button
-          class="bg-blue-600 p-2 text-3xl text-white w-24"
-          on:click={submit}>
+          class="text-3xl w-full"
+          on:click={submit}
+          disabled={output.value <= 0 || input.value <= 0}>
           Go
         </button>
       </form>

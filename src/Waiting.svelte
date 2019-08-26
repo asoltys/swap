@@ -9,7 +9,7 @@
 <h1 class="text-3xl">Got it!</h1>
 {#if asset === assets.tether.id}
   <div>
-    We'll broadcast when the bid price is above {parseFloat(rate).toFixed(2)}
+    We'll broadcast when the bid price is above {parseFloat(1 / rate).toFixed(2)}
   </div>
 {:else}
   <div>

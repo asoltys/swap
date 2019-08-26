@@ -15,6 +15,7 @@
       body: JSON.stringify({ acceptance })
     });
     const json = await res.json();
+    console.log(json);
 
     if (res.ok) {
       return json;
