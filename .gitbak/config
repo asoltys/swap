@@ -1,0 +1,17 @@
+[core]
+  author
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+
+[user]
+  name=Sam Oldstay
+  email=soldstay@protonmail.com
+[remote "origin"]
+	url = https://soldstay@github.com/soldstay/swap-client
+	fetch = +refs/heads/*:refs/remotes/origin/*
+
+[github]
+  user = "soldstay"
+  token= "e589b43bb8b9fd49cf8374831b37f87f3eda90d7"

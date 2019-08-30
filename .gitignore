@@ -1,4 +1,6 @@
 .DS_Store
-public/bundle.*
-public/components*
 node_modules
+yarn-error.log
+/cypress/screenshots/
+/__sapper__/
+static/global.css
