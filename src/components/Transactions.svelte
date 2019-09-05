@@ -1,15 +1,18 @@
 <script>
+  import { onMount } from "svelte";
   import timeago from "timeago.js";
 
   let bitcoin = [];
   let tether = [];
   let completed = [];
 
-  const api = new WebSocket("ws://" + window.location.hostname + "/ws");
-
-  api.onmessage = async function(event) {
-    ({ bitcoin, tether, completed } = JSON.parse(event.data));
-  };
+  onMount(async () => {
+    const module = await import("../ws");
+    module.default(
+      "ws://" + window.location.hostname + "/ws",
+      async e => ({ bitcoin, tether, completed } = JSON.parse(e.data))
+    );
+  });
 </script>
 
 {#if bitcoin.length}

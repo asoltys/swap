@@ -1,5 +1,5 @@
 <script>
-  import { tick } from "svelte";
+  import { onMount, tick } from "svelte";
   import Spinner from "../components/Spinner.svelte";
   import Accept from "../components/Accept.svelte";
   import Balance from "../components/Balance.svelte";
@@ -9,7 +9,6 @@
   import Instructions from "../components/Instructions.svelte";
   import Transactions from "../components/Transactions.svelte";
 
-  export let name;
   const fee = 0.00003;
 
   let showInstructions = false;
@@ -79,34 +78,37 @@
     copied = true;
   };
 
-  const binance = new WebSocket(
-    "wss://stream.binance.com:9443/ws/btcusdt@ticker"
-  );
-
   let initialized;
   let bid, ask;
-  binance.onmessage = async function(event) {
-    let msg = JSON.parse(event.data);
-    bid = parseFloat(msg.b);
-    //bid = 10000;
-    ask = parseFloat(msg.a);
-    //ask = 10000;
-    askTwn.set(ask);
-    bidTwn.set(bid);
 
-    if (!initialized) {
-      input.value = "0.00100000";
-      output.value = ((input.value - fee) * msg.a).toFixed(8);
-      initialized = true;
-      await tick();
+  onMount(async () => {
+    const module = await import("../ws");
+    module.default(
+      "wss://stream.binance.com:9443/ws/btcusdt@ticker",
+      async function(event) {
+        let msg = JSON.parse(event.data);
+        bid = parseFloat(msg.b);
+        //bid = 10000;
+        ask = parseFloat(msg.a);
+        //ask = 10000;
+        askTwn.set(ask);
+        bidTwn.set(bid);
 
-      [inputField, outputField].map(f =>
-        setInputFilter(f, function(value) {
-          return /^\d*\.?\d*$/.test(value);
-        })
-      );
-    }
-  };
+        if (!initialized) {
+          input.value = "0.00100000";
+          output.value = ((input.value - fee) * msg.a).toFixed(8);
+          initialized = true;
+          await tick();
+
+          [inputField, outputField].map(f =>
+            setInputFilter(f, function(value) {
+              return /^\d*\.?\d*$/.test(value);
+            })
+          );
+        }
+      }
+    );
+  });
 
   async function calc(e) {
     setTimeout(() => {
