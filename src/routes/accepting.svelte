@@ -1,6 +1,6 @@
 <script>
-  import Spinner from "./Spinner.svelte";
-  import Waiting from "./Waiting.svelte";
+  import Spinner from "../components/Spinner.svelte";
+  import Waiting from "../components/Waiting.svelte";
   import focus from "../focus";
 
   let acceptance = "";
@@ -15,7 +15,6 @@
       body: JSON.stringify({ acceptance })
     });
     const json = await res.json();
-    console.log(json);
 
     if (res.ok) {
       return json;
