@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "sapper dev",
-    "build": "sapper build --legacy",
+    "build": "yarn sapper build --legacy",
     "export": "sapper export --legacy",
     "start": "node __sapper__/build",
     "cy:run": "cypress run",
@@ -27,6 +27,9 @@
     "@babel/preset-env": "^7.0.0",
     "@babel/runtime": "^7.0.0",
     "@fullhuman/postcss-purgecss": "^1.2.0",
+    "@sapper/app": "link:./src/node_modules/@sapper/app",
+    "@sapper/server": "link:./src/node_modules/@sapper/server",
+    "@sapper/service-worker": "link:./src/node_modules/@sapper/service-worker",
     "autoprefixer": "^9.5.1",
     "cssnano": "^4.1.10",
     "postcss": "^7.0.16",
