@@ -22,6 +22,12 @@
     let temp = $input;
     $input = $output;
     $output = temp;
+    if ($input.name === "Bitcoin")
+      $input.value = (parseFloat($input.value) + fee).toFixed(8);
+    else
+      $input.value = (parseFloat($input.value) + fee * parseFloat(ask)).toFixed(
+        8
+      );
     calc({ target: { value: $input.value } });
   };
 
@@ -71,21 +77,24 @@
   }
 
   const submit = async () => {
-    const res = await fetch(
+    $proposal = fetch(
       `/api/proposal?v1=${$output.value}&v2=${$input.value}&a1=${$output.id}&a2=${$input.id}`
-    );
-    $proposal = await res.json();
+    ).then(res => {
+      if (res.status === 500) {
+        return res.json().then(json => {
+          const { error } = json;
+          throw new Error(error);
+        });
+      } else {
+        return res.json();
+      }
+    });
+
     goto("proposing");
   };
 </script>
 
 {#if initialized}
-  {#if $input.name === 'Bitcoin'}
-    <p class="mb-2">Binance Bid: {$bidTwn.toFixed(2)}</p>
-  {:else}
-    <p class="mb-2">Binance Ask: {$askTwn.toFixed(2)}</p>
-  {/if}
-
   <h2 class="text-3xl">Swap</h2>
   <form on:submit|preventDefault={submit}>
     <div class="flex">

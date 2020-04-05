@@ -1,6 +1,7 @@
 <script>
   import Transactions from "../components/Transactions.svelte";
   import Instructions from "../components/Instructions.svelte";
+  import Rate from "../components/Rate.svelte";
 
   let showInstructions = false;
   const toggleInstructions = () => (showInstructions = !showInstructions);
@@ -21,6 +22,7 @@
   {/if}
 
   <div class="text-xl max-w-md flex-grow mx-auto p-6 text-center">
+    <Rate />
     <slot />
     <Transactions />
   </div>
